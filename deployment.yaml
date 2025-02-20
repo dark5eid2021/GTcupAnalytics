@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: porsche-analytics
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: porsche-analytics
+  template:
+    metadata:
+      labels:
+        app: porsche-analytics
+    spec:
+      containers:
+        - name: porsche-analytics
+          image: 123456789012.dkr.ecr.us-east-1.amazonaws.com/porsche-analytics:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: porsche-secrets
+                  key: DATABASE_URL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: porsche-analytics-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: porsche-analytics
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
