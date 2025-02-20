@@ -24,14 +24,18 @@ type CarData struct {
 	Timestamp      string  `json:"timestamp"`
 }
 
+// Wrap these in a struct
 // Database connection
 var db *sql.DB
 
 // kinesis client
-var kinesisClient *kinesis.Kinesis
-var streamName = "porsch-analytics-stream"
+var (
+	kinesisClient *kinesis.Kinesis
+	streamName    = "porsch-analytics-stream"
+)
 
 func init() {
+	// Move init contents to main
 	// Load AWS Kinesis session
 	sess := session.Must(session.NewSession(&aws.Config{
 		Region: aws.String("us-east-1"),
@@ -74,6 +78,7 @@ func GenerateCarData() CarData {
 	}
 }
 
+// Make this a method on the new struct
 // Send data to Kinesis Stream
 func sendToKinesis(data CarData) {
 	jsonData, _ := json.Marshal(data)
@@ -85,21 +90,21 @@ func sendToKinesis(data CarData) {
 	if err != nil {
 		log.Printf("Error sending to Kinesis: %v", err)
 	}
-
 }
 
+// Make this a method on the new struct
 // store data in PSQL
 func storeInDatabase(data CarData) {
 	_, err := db.Exec(`
 	INSERT INTO analytics (model, speed, fuel_efficiency, engine_temp, timestamp)
 	VALUES ($1, $2, $3, $4, $5)`,
 		data.Model, data.Speed, data.FuelEfficiency, data.EngineTemp, data.Timestamp)
-
 	if err != nil {
 		log.Printf("Error inserting data: %v", err)
 	}
 }
 
+// Make this a method on the new struct
 // handle real-time analytics API
 func GetCarAnalytics(w http.ResponseWriter, r *http.Request) {
 	data := GenerateCarData()
@@ -110,6 +115,7 @@ func GetCarAnalytics(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(data)
 }
 
+// Make this a method on the new struct
 // retrieve analytics from PSQL
 func GetStoredAnalytics(w http.ResponseWriter, r *http.Request) {
 	rows, err := db.Query(`SELECT model, speed, fuel_efficiency, engine_temp, timestamp FROM analytics ORDER BY timestamp DESC LIMIT 10`)
@@ -128,6 +134,9 @@ func GetStoredAnalytics(w http.ResponseWriter, r *http.Request) {
 		}
 		results = append(results, data)
 	}
+
+	// Want to check row.Err here
+
 	w.Header().Set("Content-type", "application/json")
 	json.NewEncoder(w).Encode(results)
 }
